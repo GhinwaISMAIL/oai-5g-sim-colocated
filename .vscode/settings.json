@@ -1,0 +1,4 @@
+{
+  "python.analysis.ignore": ["profile.py"],
+  "python.linting.enabled": false
+}
