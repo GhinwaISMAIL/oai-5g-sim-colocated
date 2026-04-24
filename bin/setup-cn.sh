@@ -1,20 +1,21 @@
 #!/bin/bash
 # =============================================================================
-# setup-cn.sh — Install and start the OAI 5G Core Network on the CN node
-#
-# This script runs automatically at boot via the POWDER profile startup hook.
-# All output is logged to /local/logs/setup-cn.log
+# setup-cn.sh — Install and start the OAI 5G Core Network + gNB on the CN node
 #
 # What it does:
 #   1. Creates log directory
-#   2. Installs Docker + Docker Compose
-#   3. Pulls OAI CN Docker images
-#   4. Starts the core network using our docker-compose-cn.yaml
-#   5. Waits for AMF to be healthy
-#   6. Pre-populates the subscriber database with UE IMSIs
+#   2. Installs Docker
+#   3. Pulls OAI CN + gNB images
+#   4. Enables IP forwarding
+#   5. Starts the core network
+#   6. Waits for AMF to be healthy
+#   7. Pre-populates the subscriber database
+#   8. Adds iptables rules for UE traffic
+#   9. Starts the gNB container
+#   10. Waits for gNB to register with AMF
 # =============================================================================
 
-set -e  # exit on any error
+set -e
 
 # ------------------------------------------------------------------ #
 # 0. Logging setup
@@ -36,10 +37,8 @@ apt-get install -y \
     ca-certificates \
     curl \
     gnupg \
-    lsb-release \
-    python3-pip
+    lsb-release
 
-# Add Docker's official GPG key and repo
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
     | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
@@ -54,14 +53,11 @@ echo \
 apt-get update -y
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
-# Install docker-compose v1 CLI as well (some OAI scripts use it)
-pip3 install docker-compose
-
 echo "[CN] Docker installed."
 docker --version
 
 # ------------------------------------------------------------------ #
-# 2. Pull OAI CN images
+# 2. Pull OAI CN + gNB images
 # ------------------------------------------------------------------ #
 echo "[CN] Pulling OAI CN images..."
 
@@ -74,11 +70,13 @@ docker pull oaisoftwarealliance/oai-udm:v2.0.0
 docker pull oaisoftwarealliance/oai-udr:v2.0.0
 docker pull oaisoftwarealliance/oai-ausf:v2.0.0
 docker pull oaisoftwarealliance/trf-gen-cn5g:latest
+docker pull oaisoftwarealliance/oai-gnb:v2.0.0
+docker pull oaisoftwarealliance/oai-nr-ue:v2.0.0
 
 echo "[CN] All images pulled."
 
 # ------------------------------------------------------------------ #
-# 3. Enable IP forwarding (needed for UPF routing)
+# 3. Enable IP forwarding
 # ------------------------------------------------------------------ #
 echo "[CN] Enabling IP forwarding..."
 sysctl -w net.ipv4.ip_forward=1
@@ -94,44 +92,19 @@ docker compose -f docker-compose-cn.yaml up -d
 
 echo "[CN] Docker Compose launched."
 
-
-# ------------------------------------------------------------------ #
-# Add iptables rules to allow UE traffic into Docker network
-# ------------------------------------------------------------------ #
-echo "[CN] Adding iptables forwarding rules..."
-
-# Wait for Docker bridge to exist
-sleep 5
-
-# Detect experimental LAN interface
-LAN_IF=$(ip route | grep "10.10.0" | awk '{print $3}' | head -1)
-
-# Detect Docker bridge for oai-public-net
-BRIDGE_ID=$(docker network inspect etc_oai-public-net \
-    --format '{{.Id}}' 2>/dev/null | cut -c1-12)
-BRIDGE_IF="br-${BRIDGE_ID}"
-
-echo "[CN] LAN interface: ${LAN_IF}"
-echo "[CN] Docker bridge: ${BRIDGE_IF}"
-
-iptables -I DOCKER-USER -i ${LAN_IF} -o ${BRIDGE_IF} -j ACCEPT || true
-iptables -I DOCKER-USER -i ${BRIDGE_IF} -o ${LAN_IF} -j ACCEPT || true
-
-echo "[CN] iptables rules added."
-
 # ------------------------------------------------------------------ #
 # 5. Wait for AMF to be healthy
 # ------------------------------------------------------------------ #
 echo "[CN] Waiting for AMF to become healthy..."
 
-MAX_WAIT=300   # 5 minutes max
+MAX_WAIT=600
 ELAPSED=0
 INTERVAL=10
 
 until docker ps --filter "name=oai-amf" --filter "health=healthy" \
       --format "{{.Names}}" | grep -q "oai-amf"; do
     if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
-        echo "[CN] ERROR: AMF did not become healthy within ${MAX_WAIT}s. Check logs."
+        echo "[CN] ERROR: AMF did not become healthy within ${MAX_WAIT}s."
         docker logs oai-amf || true
         exit 1
     fi
@@ -147,49 +120,53 @@ echo "[CN] AMF is healthy."
 # ------------------------------------------------------------------ #
 echo "[CN] Populating subscriber database..."
 
-# Wait for MySQL to be ready
-until docker exec oai-mysql mysqladmin ping -h localhost \
-      --silent 2>/dev/null; do
+until docker exec oai-mysql mysqladmin ping -h localhost --silent 2>/dev/null; do
     echo "[CN] Waiting for MySQL..."
     sleep 5
 done
 
-# Insert IMSIs for 8 UEs (ue1..ue8)
-# IMSI format: 208950000000031 .. 208950000000038
-# Key/OPC values match the ue.conf.template we will create in Step 5
-
 docker exec oai-mysql mysql -u root -plinux oai_db << 'SQL'
-
--- Make sure we don't duplicate on re-runs
 DELETE FROM AuthenticationSubscription WHERE ueid LIKE '20895000000003%';
 DELETE FROM SessionManagementSubscriptionData WHERE ueid LIKE '20895000000003%';
 DELETE FROM AccessAndMobilitySubscriptionData WHERE ueid LIKE '20895000000003%';
 DELETE FROM SmfSelectionSubscriptionData WHERE ueid LIKE '20895000000003%';
 
--- Insert 8 UEs
-SET @imsi_base = 208950000000030;
-
--- We loop by inserting each IMSI individually for clarity
 INSERT INTO AuthenticationSubscription VALUES
-('208950000000031','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{\"sqn\": \"000000000020\", \"sqnScheme\": \"NON_TIME_BASED\", \"lastIndexes\": {\"ausf\": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL),
-('208950000000032','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{\"sqn\": \"000000000020\", \"sqnScheme\": \"NON_TIME_BASED\", \"lastIndexes\": {\"ausf\": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL),
-('208950000000033','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{\"sqn\": \"000000000020\", \"sqnScheme\": \"NON_TIME_BASED\", \"lastIndexes\": {\"ausf\": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL),
-('208950000000034','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{\"sqn\": \"000000000020\", \"sqnScheme\": \"NON_TIME_BASED\", \"lastIndexes\": {\"ausf\": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL),
-('208950000000035','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{\"sqn\": \"000000000020\", \"sqnScheme\": \"NON_TIME_BASED\", \"lastIndexes\": {\"ausf\": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL),
-('208950000000036','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{\"sqn\": \"000000000020\", \"sqnScheme\": \"NON_TIME_BASED\", \"lastIndexes\": {\"ausf\": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL),
-('208950000000037','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{\"sqn\": \"000000000020\", \"sqnScheme\": \"NON_TIME_BASED\", \"lastIndexes\": {\"ausf\": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL),
-('208950000000038','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{\"sqn\": \"000000000020\", \"sqnScheme\": \"NON_TIME_BASED\", \"lastIndexes\": {\"ausf\": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL);
-
+('208950000000031','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{"sqn": "000000000020", "sqnScheme": "NON_TIME_BASED", "lastIndexes": {"ausf": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL),
+('208950000000032','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{"sqn": "000000000020", "sqnScheme": "NON_TIME_BASED", "lastIndexes": {"ausf": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL),
+('208950000000033','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{"sqn": "000000000020", "sqnScheme": "NON_TIME_BASED", "lastIndexes": {"ausf": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL),
+('208950000000034','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{"sqn": "000000000020", "sqnScheme": "NON_TIME_BASED", "lastIndexes": {"ausf": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL),
+('208950000000035','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{"sqn": "000000000020", "sqnScheme": "NON_TIME_BASED", "lastIndexes": {"ausf": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL),
+('208950000000036','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{"sqn": "000000000020", "sqnScheme": "NON_TIME_BASED", "lastIndexes": {"ausf": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL),
+('208950000000037','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{"sqn": "000000000020", "sqnScheme": "NON_TIME_BASED", "lastIndexes": {"ausf": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL),
+('208950000000038','5G_AKA','0C0A34601D4F07677303652C0462535B','0C0A34601D4F07677303652C0462535B','{"sqn": "000000000020", "sqnScheme": "NON_TIME_BASED", "lastIndexes": {"ausf": 0}}','milenage',NULL,'63bfa50ee6523365ff14c1f45f88737d',NULL,NULL,NULL,NULL);
 SQL
 
 echo "[CN] Subscriber database populated."
 
+# ------------------------------------------------------------------ #
+# 7. Add iptables rules for UE traffic into Docker network
+# ------------------------------------------------------------------ #
+echo "[CN] Adding iptables forwarding rules..."
+
+sleep 5
+
+LAN_IF=$(ip route | grep "10.10.0" | awk '{print $3}' | head -1)
+BRIDGE_ID=$(docker network inspect etc_oai-public-net \
+    --format '{{.Id}}' 2>/dev/null | cut -c1-12)
+BRIDGE_IF="br-${BRIDGE_ID}"
+
+echo "[CN] LAN interface: ${LAN_IF}"
+echo "[CN] Docker bridge: ${BRIDGE_IF}"
+
+iptables -I DOCKER-USER -i ${LAN_IF} -o ${BRIDGE_IF} -j ACCEPT || true
+iptables -I DOCKER-USER -i ${BRIDGE_IF} -o ${LAN_IF} -j ACCEPT || true
+
+echo "[CN] iptables rules added."
 
 # ------------------------------------------------------------------ #
-# 7. Pull OAI gNB image and start gNB container
+# 8. Start the gNB container
 # ------------------------------------------------------------------ #
-echo "[CN] Pulling OAI gNB image..."
-docker pull oaisoftwarealliance/oai-gnb:v2.0.0
 echo "[CN] Starting gNB container..."
 
 docker run -d \
@@ -203,20 +180,25 @@ docker run -d \
 
 echo "[CN] gNB container started."
 
-# Wait for gNB to register with AMF
-echo "[CN] Waiting for gNB to register..."
+# ------------------------------------------------------------------ #
+# 9. Wait for gNB to register with AMF
+# ------------------------------------------------------------------ #
+echo "[CN] Waiting for gNB to register with AMF..."
+
 MAX_WAIT=120
 ELAPSED=0
+
 until docker logs oai-gnb 2>&1 | grep -q "NGAP_REGISTER_GNB_CNF"; do
     if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
-        echo "[CN] WARNING: gNB registration not confirmed. Check: docker logs oai-gnb"
+        echo "[CN] WARNING: gNB registration not confirmed within ${MAX_WAIT}s."
+        echo "[CN] Check: docker logs oai-gnb"
         break
     fi
     sleep 10
     ELAPSED=$((ELAPSED + 10))
 done
-echo "[CN] gNB ready."
 
+echo "[CN] gNB ready."
 
 # ------------------------------------------------------------------ #
 # Done
