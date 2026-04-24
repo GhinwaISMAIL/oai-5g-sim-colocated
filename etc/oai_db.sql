@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS `AccessAndMobilitySubscriptionData` (
 -- Session Management Subscription Data
 -- ------------------------------------------------------------------ --
 CREATE TABLE IF NOT EXISTS `SessionManagementSubscriptionData` (
+  `id`                         int          NOT NULL AUTO_INCREMENT,
   `ueid`                       varchar(15)  NOT NULL,
   `servingPlmnid`              varchar(15)  NOT NULL,
   `singleNssai`                json         NOT NULL,
@@ -87,7 +88,8 @@ CREATE TABLE IF NOT EXISTS `SessionManagementSubscriptionData` (
   `expectedUeBehavioursList`   json         DEFAULT NULL,
   `suggestedPacketNumDlList`   json         DEFAULT NULL,
   `3gppChargingCharacteristics` varchar(4)  DEFAULT NULL,
-  PRIMARY KEY (`ueid`, `servingPlmnid`, `singleNssai`(200))
+  PRIMARY KEY (`id`),
+  KEY `ueid_plmn` (`ueid`, `servingPlmnid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ------------------------------------------------------------------ --
