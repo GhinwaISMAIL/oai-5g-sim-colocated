@@ -3,16 +3,6 @@
 # setup-ue.sh — Install and start one OAI nrUE instance on a UE node
 #
 # Usage: setup-ue.sh <UE_INDEX>
-#   UE_INDEX: 1, 2, 3, ... (passed from profile.py)
-#
-# What it does:
-#   1. Creates log directory
-#   2. Installs Docker
-#   3. Adds route to CN Docker network via CN node
-#   4. Pulls OAI nrUE Docker image
-#   5. Waits until gNB RFsim port is reachable
-#   6. Starts the nrUE container with the correct IMSI for this node
-#   7. Waits for the tunnel interface to appear
 # =============================================================================
 
 set -e
@@ -31,20 +21,9 @@ echo "============================================"
 
 # ------------------------------------------------------------------ #
 # 1. IMSI assignment
-#
-# Each UE node gets a unique IMSI based on its index:
-#   UE1 -> 208950000000031
-#   UE2 -> 208950000000032
-#   ...
-#   UE8 -> 208950000000038
-#
-# These must match the IMSIs inserted into the CN database
-# by setup-cn.sh (Step 2).
 # ------------------------------------------------------------------ #
 IMSI_BASE="20895000000003"
 IMSI="${IMSI_BASE}${UE_INDEX}"
-
-# Matching credentials — same for all UEs in this lab setup
 KEY="0C0A34601D4F07677303652C0462535B"
 OPC="63bfa50ee6523365ff14c1f45f88737d"
 
@@ -84,25 +63,18 @@ echo "[UE${UE_INDEX}] Docker installed."
 # 3. Add route to CN Docker network
 # ------------------------------------------------------------------ #
 echo "[UE${UE_INDEX}] Adding route to CN Docker network..."
-
 ip route add 192.168.70.128/26 via 10.10.0.10 || true
-
 echo "[UE${UE_INDEX}] Route added."
 
 # ------------------------------------------------------------------ #
 # 4. Pull OAI nrUE image
 # ------------------------------------------------------------------ #
 echo "[UE${UE_INDEX}] Pulling OAI nrUE image..."
-
-docker pull oaisoftwarealliance/oai-nr-ue:2024.w25
-
+docker pull oaisoftwarealliance/oai-nr-ue:v2.0.0
 echo "[UE${UE_INDEX}] Image pulled."
 
 # ------------------------------------------------------------------ #
-# 5. Wait for gNB RFsim port to be reachable (TCP 4043)
-#
-# The gNB RFsim server listens on TCP 4043.
-# We wait for it to be up before starting the UE.
+# 5. Wait for gNB RFsim port 4043 to be reachable
 # ------------------------------------------------------------------ #
 echo "[UE${UE_INDEX}] Waiting for gNB RFsim at 10.10.0.10:4043..."
 
@@ -110,9 +82,9 @@ MAX_WAIT=600
 ELAPSED=0
 INTERVAL=15
 
-until ping -c1 -W2 10.10.0.10 > /dev/null 2>&1; do
+until bash -c "echo > /dev/tcp/10.10.0.10/4043" 2>/dev/null; do
     if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
-        echo "[UE${UE_INDEX}] ERROR: gNB RFsim not reachable after ${MAX_WAIT}s. Aborting."
+        echo "[UE${UE_INDEX}] ERROR: gNB RFsim port 4043 not reachable after ${MAX_WAIT}s."
         exit 1
     fi
     echo "[UE${UE_INDEX}] gNB not ready yet, waiting ${INTERVAL}s... (${ELAPSED}s elapsed)"
@@ -120,7 +92,7 @@ until ping -c1 -W2 10.10.0.10 > /dev/null 2>&1; do
     ELAPSED=$((ELAPSED + INTERVAL))
 done
 
-echo "[UE${UE_INDEX}] gNB RFsim is reachable."
+echo "[UE${UE_INDEX}] gNB RFsim port 4043 is reachable."
 
 # ------------------------------------------------------------------ #
 # 6. Start the nrUE container
@@ -140,13 +112,10 @@ echo "[UE${UE_INDEX}] nrUE container started."
 
 # ------------------------------------------------------------------ #
 # 7. Wait for tunnel interface to appear
-#
-# A successful UE attach creates oaitun_ue1 on the host.
-# We wait for it as confirmation that the full attach worked.
 # ------------------------------------------------------------------ #
 echo "[UE${UE_INDEX}] Waiting for oaitun_ue1 tunnel interface..."
 
-MAX_WAIT=120
+MAX_WAIT=180
 ELAPSED=0
 
 until ip link show oaitun_ue1 > /dev/null 2>&1; do
@@ -162,12 +131,10 @@ done
 if ip link show oaitun_ue1 > /dev/null 2>&1; then
     UE_IP=$(ip addr show oaitun_ue1 | grep 'inet ' | awk '{print $2}')
     echo "[UE${UE_INDEX}] Tunnel UP. UE IP: ${UE_IP}"
-
-    # Quick end-to-end ping to ext-dn as final validation
     echo "[UE${UE_INDEX}] Testing end-to-end connectivity..."
     ping -I oaitun_ue1 -c 4 192.168.70.135 && \
         echo "[UE${UE_INDEX}] End-to-end ping SUCCESS." || \
-        echo "[UE${UE_INDEX}] End-to-end ping FAILED — check UPF and routing."
+        echo "[UE${UE_INDEX}] End-to-end ping FAILED."
 fi
 
 # ------------------------------------------------------------------ #
