@@ -209,7 +209,7 @@ services:
       oai-public-net:
         ipv4_address: 192.168.70.132
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://192.168.70.132/namf-comm/v1/ue-contexts || exit 1"]
+      test: ["CMD-SHELL", "ss -tnlp | grep 8080"]
       interval: 10s
       timeout: 5s
       retries: 30
