@@ -159,6 +159,40 @@ SQL
 
 echo "[CN] Subscriber database populated."
 
+
+# ------------------------------------------------------------------ #
+# 7. Pull OAI gNB image and start gNB container
+# ------------------------------------------------------------------ #
+echo "[CN] Pulling OAI gNB image..."
+docker pull oaisoftwarealliance/oai-gnb:v2.0.0
+echo "[CN] Starting gNB container..."
+
+docker run -d \
+  --name oai-gnb \
+  --net host \
+  --privileged \
+  -v /local/repository/etc/gnb.conf:/opt/oai-gnb/etc/gnb.conf:ro \
+  -e TZ=Europe/Paris \
+  -e USE_ADDITIONAL_OPTIONS="--sa --rfsim --rfsimulator.serveraddr server --log_config.global_log_options level,nocolor,time" \
+  oaisoftwarealliance/oai-gnb:v2.0.0
+
+echo "[CN] gNB container started."
+
+# Wait for gNB to register with AMF
+echo "[CN] Waiting for gNB to register..."
+MAX_WAIT=120
+ELAPSED=0
+until docker logs oai-gnb 2>&1 | grep -q "NGAP_REGISTER_GNB_CNF"; do
+    if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
+        echo "[CN] WARNING: gNB registration not confirmed. Check: docker logs oai-gnb"
+        break
+    fi
+    sleep 10
+    ELAPSED=$((ELAPSED + 10))
+done
+echo "[CN] gNB ready."
+
+
 # ------------------------------------------------------------------ #
 # Done
 # ------------------------------------------------------------------ #

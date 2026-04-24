@@ -110,7 +110,7 @@ MAX_WAIT=600
 ELAPSED=0
 INTERVAL=15
 
-until bash -c "echo > /dev/tcp/10.10.0.20/4043" 2>/dev/null; do
+until ping -c1 -W2 10.10.0.10 > /dev/null 2>&1; do
     if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
         echo "[UE${UE_INDEX}] ERROR: gNB RFsim not reachable after ${MAX_WAIT}s. Aborting."
         exit 1
@@ -131,16 +131,10 @@ docker run -d \
   --name oai-nr-ue \
   --net host \
   --privileged \
+  -v /local/repository/etc/nr-ue.conf:/opt/oai-nr-ue/etc/nr-ue.conf:ro \
   -e TZ=Europe/Paris \
-  -e RFSIMULATOR=10.10.0.20 \
-  -e FULL_IMSI=${IMSI} \
-  -e FULL_KEY=${KEY} \
-  -e OPC=${OPC} \
-  -e DNN=oai \
-  -e NSSAI_SST=1 \
-  -e NSSAI_SD=1 \
-  -e USE_ADDITIONAL_OPTIONS="-r 106 -C 3619200000 --sa --nokrnmod --numerology 1 --band 78 --rfsim --rfsimulator.options chanmod --telnetsrv --log_config.global_log_options level,nocolor,time" \
-  oaisoftwarealliance/oai-nr-ue:2024.w25
+  -e USE_ADDITIONAL_OPTIONS="-r 106 -C 3619200000 --sa --nokrnmod --numerology 1 --band 78 --rfsim --rfsimulator.serveraddr 10.10.0.10 --uicc0.imsi ${IMSI}" \
+  oaisoftwarealliance/oai-nr-ue:v2.0.0
 
 echo "[UE${UE_INDEX}] nrUE container started."
 
