@@ -266,7 +266,7 @@ services:
   # UPF (SPGWU) — User Plane Function
   # ------------------------------------------------------------------ #
   oai-spgwu:
-    image: oaisoftwarealliance/oai-spgwu-tiny:v2.0.0
+    image: oaisoftwarealliance/oai-upf:v2.0.0
     container_name: oai-spgwu
     depends_on:
       oai-smf:
