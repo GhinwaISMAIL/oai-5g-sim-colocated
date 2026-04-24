@@ -23,7 +23,7 @@ services:
     restart: unless-stopped
 
   oai-nrf:
-    image: oaisoftwarealliance/oai-nrf:v2.0.0
+    image: oaisoftwarealliance/oai-nrf:v2.1.10
     container_name: oai-nrf
     environment:
       - TZ=Europe/Paris
@@ -44,7 +44,7 @@ services:
     restart: unless-stopped
 
   oai-udr:
-    image: oaisoftwarealliance/oai-udr:v2.0.0
+    image: oaisoftwarealliance/oai-udr:v2.1.10
     container_name: oai-udr
     depends_on:
       mysql:
@@ -76,7 +76,7 @@ services:
     restart: unless-stopped
 
   oai-udm:
-    image: oaisoftwarealliance/oai-udm:v2.0.0
+    image: oaisoftwarealliance/oai-udm:v2.1.10
     container_name: oai-udm
     depends_on:
       oai-udr:
@@ -102,7 +102,7 @@ services:
     restart: unless-stopped
 
   oai-ausf:
-    image: oaisoftwarealliance/oai-ausf:v2.0.0
+    image: oaisoftwarealliance/oai-ausf:v2.1.10
     container_name: oai-ausf
     depends_on:
       oai-udm:
@@ -128,7 +128,7 @@ services:
     restart: unless-stopped
 
   oai-amf:
-    image: oaisoftwarealliance/oai-amf:v2.0.0
+    image: oaisoftwarealliance/oai-amf:v2.1.10
     container_name: oai-amf
     depends_on:
       oai-ausf:
@@ -182,7 +182,7 @@ services:
     restart: unless-stopped
 
   oai-smf:
-    image: oaisoftwarealliance/oai-smf:v2.0.0
+    image: oaisoftwarealliance/oai-smf:v2.1.10
     container_name: oai-smf
     depends_on:
       oai-amf:
@@ -195,7 +195,7 @@ services:
     restart: unless-stopped
 
   oai-spgwu:
-    image: oaisoftwarealliance/oai-upf:v2.0.0
+    image: oaisoftwarealliance/oai-upf:v2.1.10
     container_name: oai-spgwu
     depends_on:
       oai-smf:
