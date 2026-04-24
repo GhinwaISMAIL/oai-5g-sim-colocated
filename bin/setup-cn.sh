@@ -62,13 +62,13 @@ docker --version
 echo "[CN] Pulling OAI CN images..."
 
 docker pull mysql:8.0
-docker pull oaisoftwarealliance/oai-nrf:v2.0.0
-docker pull oaisoftwarealliance/oai-amf:v2.0.0
-docker pull oaisoftwarealliance/oai-smf:v2.0.0
-docker pull oaisoftwarealliance/oai-upf:v2.0.0
-docker pull oaisoftwarealliance/oai-udm:v2.0.0
-docker pull oaisoftwarealliance/oai-udr:v2.0.0
-docker pull oaisoftwarealliance/oai-ausf:v2.0.0
+docker pull oaisoftwarealliance/oai-nrf:v2.1.10
+docker pull oaisoftwarealliance/oai-amf:v2.1.10
+docker pull oaisoftwarealliance/oai-smf:v2.1.10
+docker pull oaisoftwarealliance/oai-upf:v2.1.10
+docker pull oaisoftwarealliance/oai-udm:v2.1.10
+docker pull oaisoftwarealliance/oai-udr:v2.1.10
+docker pull oaisoftwarealliance/oai-ausf:v2.1.10
 docker pull oaisoftwarealliance/trf-gen-cn5g:latest
 docker pull oaisoftwarealliance/oai-gnb:2024.w25
 docker pull oaisoftwarealliance/oai-nr-ue:2024.w25
