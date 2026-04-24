@@ -1,0 +1,50 @@
+log_level:
+  general: debug
+
+register_nf:
+  general: yes
+
+http_version: 2
+
+smf:
+  host: oai-smf
+  sbi:
+    port: 8080
+    api_version: v1
+    interface_name: eth0
+  n4:
+    interface_name: eth0
+
+nfs:
+  amf:
+    host: oai-amf
+    sbi:
+      port: 8080
+      api_version: v1
+  upf:
+    host: oai-spgwu
+    n4:
+      port: 8805
+  nrf:
+    host: oai-nrf
+    sbi:
+      port: 8080
+      api_version: v1
+
+dnns:
+  - dnn: oai
+    pdu_session_type: IPV4
+    ipv4_subnet: "12.1.1.0/24"
+  - dnn: ims
+    pdu_session_type: IPV4V6
+    ipv4_subnet: "12.1.1.0/24"
+
+local_subscription_info:
+  - single_nssai:
+      sst: 1
+      sd: "000001"
+    dnn: oai
+    qos_profile:
+      5qi: 9
+      session_ambr_ul: 200Mbps
+      session_ambr_dl: 400Mbps
