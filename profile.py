@@ -18,7 +18,7 @@ pc.verifyParameters()
 
 request = pc.makeRequestRSpec()
 
-IMAGE = "urn:publicid:IDN+emulab.net+image+emulab-ops:UBUNTU20-64-STD"
+IMAGE = "urn:publicid:IDN+emulab.net+image+emulab-ops:UBUNTU22-64-STD"
 MASK = "255.255.255.0"
 
 def attach(lan, node, ifname, ip):
