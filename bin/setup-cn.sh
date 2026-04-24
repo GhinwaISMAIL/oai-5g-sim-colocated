@@ -94,6 +94,31 @@ docker compose -f docker-compose-cn.yaml up -d
 
 echo "[CN] Docker Compose launched."
 
+
+# ------------------------------------------------------------------ #
+# Add iptables rules to allow UE traffic into Docker network
+# ------------------------------------------------------------------ #
+echo "[CN] Adding iptables forwarding rules..."
+
+# Wait for Docker bridge to exist
+sleep 5
+
+# Detect experimental LAN interface
+LAN_IF=$(ip route | grep "10.10.0" | awk '{print $3}' | head -1)
+
+# Detect Docker bridge for oai-public-net
+BRIDGE_ID=$(docker network inspect etc_oai-public-net \
+    --format '{{.Id}}' 2>/dev/null | cut -c1-12)
+BRIDGE_IF="br-${BRIDGE_ID}"
+
+echo "[CN] LAN interface: ${LAN_IF}"
+echo "[CN] Docker bridge: ${BRIDGE_IF}"
+
+iptables -I DOCKER-USER -i ${LAN_IF} -o ${BRIDGE_IF} -j ACCEPT || true
+iptables -I DOCKER-USER -i ${BRIDGE_IF} -o ${LAN_IF} -j ACCEPT || true
+
+echo "[CN] iptables rules added."
+
 # ------------------------------------------------------------------ #
 # 5. Wait for AMF to be healthy
 # ------------------------------------------------------------------ #

@@ -11,6 +11,15 @@
 #   6. Starts the gNB container in RFsim server mode
 # =============================================================================
 
+
+# NOTE: In the colocated version, gNB is started by setup-cn.sh
+# This script is kept for reference only
+exit 0
+
+
+
+
+
 set -e
 
 # ------------------------------------------------------------------ #

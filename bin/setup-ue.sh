@@ -104,7 +104,7 @@ echo "[UE${UE_INDEX}] Image pulled."
 # The gNB RFsim server listens on TCP 4043.
 # We wait for it to be up before starting the UE.
 # ------------------------------------------------------------------ #
-echo "[UE${UE_INDEX}] Waiting for gNB RFsim at 10.10.0.20:4043..."
+echo "[UE${UE_INDEX}] Waiting for gNB RFsim at 10.10.0.10:4043..."
 
 MAX_WAIT=600
 ELAPSED=0
