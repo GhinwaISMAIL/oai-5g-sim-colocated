@@ -71,7 +71,7 @@ docker pull oaisoftwarealliance/oai-udr:v2.0.0
 docker pull oaisoftwarealliance/oai-ausf:v2.0.0
 docker pull oaisoftwarealliance/trf-gen-cn5g:latest
 docker pull oaisoftwarealliance/oai-gnb:v2.0.0
-docker pull oaisoftwarealliance/oai-nr-ue:v2.0.0
+docker pull oaisoftwarealliance/oai-nr-ue:2024.w25
 
 echo "[CN] All images pulled."
 

@@ -70,7 +70,7 @@ echo "[UE${UE_INDEX}] Route added."
 # 4. Pull OAI nrUE image
 # ------------------------------------------------------------------ #
 echo "[UE${UE_INDEX}] Pulling OAI nrUE image..."
-docker pull oaisoftwarealliance/oai-nr-ue:v2.0.0
+docker pull oaisoftwarealliance/oai-nr-ue:2024.w25
 echo "[UE${UE_INDEX}] Image pulled."
 
 # ------------------------------------------------------------------ #
@@ -106,7 +106,7 @@ docker run -d \
   -v /local/repository/etc/nr-ue.conf:/opt/oai-nr-ue/etc/nr-ue.conf:ro \
   -e TZ=Europe/Paris \
   -e USE_ADDITIONAL_OPTIONS="-r 106 -C 3619200000 --sa --nokrnmod --numerology 1 --band 78 --rfsim --rfsimulator.serveraddr 10.10.0.10 --uicc0.imsi ${IMSI}" \
-  oaisoftwarealliance/oai-nr-ue:v2.0.0
+  oaisoftwarealliance/oai-nr-ue:2024.w25
 
 echo "[UE${UE_INDEX}] nrUE container started."
 
