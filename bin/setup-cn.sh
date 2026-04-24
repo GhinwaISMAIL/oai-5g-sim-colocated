@@ -70,7 +70,7 @@ docker pull oaisoftwarealliance/oai-udm:v2.0.0
 docker pull oaisoftwarealliance/oai-udr:v2.0.0
 docker pull oaisoftwarealliance/oai-ausf:v2.0.0
 docker pull oaisoftwarealliance/trf-gen-cn5g:latest
-docker pull oaisoftwarealliance/oai-gnb:v2.0.0
+docker pull oaisoftwarealliance/oai-gnb:2024.w25
 docker pull oaisoftwarealliance/oai-nr-ue:2024.w25
 
 echo "[CN] All images pulled."
@@ -174,7 +174,7 @@ docker run -d \
   -v /local/repository/etc/gnb.conf:/opt/oai-gnb/etc/gnb.conf:ro \
   -e TZ=Europe/Paris \
   -e USE_ADDITIONAL_OPTIONS="--sa --rfsim --rfsimulator.serveraddr server --log_config.global_log_options level,nocolor,time" \
-  oaisoftwarealliance/oai-gnb:v2.0.0
+  oaisoftwarealliance/oai-gnb:2024.w25
 
 echo "[CN] gNB container started."
 
