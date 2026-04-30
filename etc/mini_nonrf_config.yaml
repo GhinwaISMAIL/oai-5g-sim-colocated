@@ -51,13 +51,13 @@ nfs:
       api_version: v1
       interface_name: eth0
     n3:
-      interface_name: eth0
+      interface_name: eth1
       port: 2152
     n4:
-      interface_name: eth0
+      interface_name: eth1
       port: 8805
     n6:
-      interface_name: eth1
+      interface_name: eth0
     n9:
       interface_name: eth0
       port: 2152
