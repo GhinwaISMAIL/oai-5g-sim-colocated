@@ -78,7 +78,7 @@ snssais:
 amf:
   amf_name: "OAI-AMF"
   support_features_options:
-    enable_simple_scenario: yes
+    enable_simple_scenario: no
     enable_nssf: no
     enable_smf_selection: no
   relative_capacity: 30
