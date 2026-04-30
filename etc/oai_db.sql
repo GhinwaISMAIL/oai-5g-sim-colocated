@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS SessionManagementSubscriptionData (
   servingPlmnid VARCHAR(15) NOT NULL,
   singleNssai JSON NOT NULL,
   dnnConfigurations JSON,
-  PRIMARY KEY (ueid, servingPlmnid, singleNssai(100))
+  PRIMARY KEY (ueid, servingPlmnid)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE IF NOT EXISTS AccessAndMobilitySubscriptionData (
