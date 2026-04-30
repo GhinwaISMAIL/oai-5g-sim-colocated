@@ -2,7 +2,7 @@
 # =============================================================================
 # setup.sh — Single-node OAI 5G SA RFsim emulation
 #
-# Deploys: mysql + amf + smf + upf + ext-dn + gnb + 4 UEs
+# Deploys: mysql + udr + udm + ausf + amf + smf + upf + ext-dn + gnb + 12 UEs
 # All containers on a shared Docker bridge network
 # No cross-node timing issues, no --net host
 # =============================================================================
@@ -58,6 +58,9 @@ echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
 echo "[SETUP] Pulling images..."
 
 docker pull mysql:8.0
+docker pull oaisoftwarealliance/oai-udr:v2.0.0
+docker pull oaisoftwarealliance/oai-udm:v2.0.0
+docker pull oaisoftwarealliance/oai-ausf:v2.0.0
 docker pull oaisoftwarealliance/oai-amf:v2.0.0
 docker pull oaisoftwarealliance/oai-smf:v2.0.0
 docker pull oaisoftwarealliance/oai-upf:v2.0.0
@@ -111,20 +114,61 @@ done
 echo "[SETUP] gNB registered."
 
 # ------------------------------------------------------------------ #
-# 7. Wait for UE1 to attach
+# 7. Wait for all UEs to attach (3 minutes)
 # ------------------------------------------------------------------ #
-echo "[SETUP] Waiting for UE1 to attach..."
-MAX_WAIT=300
-ELAPSED=0
-until docker logs rfsim5g-oai-nr-ue1 2>&1 | grep -q "PDU SESSION ESTABLISHMENT"; do
-    if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
-        echo "[SETUP] WARNING: UE1 attach timeout."
-        break
+echo "[SETUP] Waiting for UEs to attach (180s)..."
+sleep 180
+
+# ------------------------------------------------------------------ #
+# 8. Check and restart any stuck UEs
+# ------------------------------------------------------------------ #
+echo "[SETUP] Checking UE registration status..."
+
+IMSI_LIST=(
+    "208990100001100"
+    "208990100001101"
+    "208990100001102"
+    "208990100001103"
+    "208990100001104"
+    "208990100001105"
+    "208990100001106"
+    "208990100001107"
+    "208990100001108"
+    "208990100001109"
+    "208990100001110"
+    "208990100001111"
+)
+
+STUCK_UES=""
+for i in "${!IMSI_LIST[@]}"; do
+    UE_NUM=$((i + 1))
+    IMSI="${IMSI_LIST[$i]}"
+    IS_STUCK=$(docker logs rfsim5g-oai-amf 2>&1 | grep "5GMM-REG-INITIATED" | grep -c "$IMSI")
+    if [ "$IS_STUCK" -gt "0" ]; then
+        echo "[SETUP] UE${UE_NUM} (${IMSI}) stuck in REG-INITIATED, restarting..."
+        docker restart rfsim5g-oai-nr-ue${UE_NUM}
+        STUCK_UES="$STUCK_UES UE${UE_NUM}"
     fi
-    sleep 10
-    ELAPSED=$((ELAPSED + 10))
 done
-echo "[SETUP] UE1 attached."
+
+if [ -z "$STUCK_UES" ]; then
+    echo "[SETUP] All UEs registered successfully on first attempt."
+else
+    echo "[SETUP] Restarted stuck UEs:$STUCK_UES. Waiting 90s..."
+    sleep 90
+
+    echo "[SETUP] Final registration check..."
+    for i in "${!IMSI_LIST[@]}"; do
+        UE_NUM=$((i + 1))
+        IMSI="${IMSI_LIST[$i]}"
+        IS_REGISTERED=$(docker logs rfsim5g-oai-amf 2>&1 | grep "5GMM-REGISTERED" | grep -c "$IMSI")
+        if [ "$IS_REGISTERED" -gt "0" ]; then
+            echo "[SETUP] UE${UE_NUM} (${IMSI}): REGISTERED"
+        else
+            echo "[SETUP] WARNING: UE${UE_NUM} (${IMSI}): still not registered"
+        fi
+    done
+fi
 
 # ------------------------------------------------------------------ #
 # Done
