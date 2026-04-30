@@ -1,3 +1,4 @@
+SET SESSION sql_mode = '';
 CREATE DATABASE IF NOT EXISTS oai_db;
 USE oai_db;
 
@@ -14,7 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
   mcc varchar(3),
   mnc varchar(3),
   ue_ip varchar(15),
-  ms_ps_status varchar(2) DEFAULT 'PURGED',
+  ms_ps_status varchar(10) DEFAULT 'PURGED',
   rau_tau_timer int(10) unsigned DEFAULT '120',
   ue_status int(10) unsigned DEFAULT '0',
   PRIMARY KEY (userid)
