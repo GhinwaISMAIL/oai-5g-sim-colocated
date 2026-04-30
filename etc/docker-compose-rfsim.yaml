@@ -21,6 +21,60 @@ services:
       public_net:
         ipv4_address: 192.168.71.131
 
+  oai-udr:
+    container_name: rfsim5g-oai-udr
+    image: oaisoftwarealliance/oai-udr:v2.0.0
+    environment:
+      - TZ=Europe/Paris
+    volumes:
+      - ./mini_nonrf_config.yaml:/openair-udr/etc/config.yaml
+    depends_on:
+      - mysql
+    networks:
+      public_net:
+        ipv4_address: 192.168.71.136
+    healthcheck:
+      test: /bin/bash -c "pgrep oai_udr"
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  oai-udm:
+    container_name: rfsim5g-oai-udm
+    image: oaisoftwarealliance/oai-udm:v2.0.0
+    environment:
+      - TZ=Europe/Paris
+    volumes:
+      - ./mini_nonrf_config.yaml:/openair-udm/etc/config.yaml
+    depends_on:
+      - oai-udr
+    networks:
+      public_net:
+        ipv4_address: 192.168.71.137
+    healthcheck:
+      test: /bin/bash -c "pgrep oai_udm"
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  oai-ausf:
+    container_name: rfsim5g-oai-ausf
+    image: oaisoftwarealliance/oai-ausf:v2.0.0
+    environment:
+      - TZ=Europe/Paris
+    volumes:
+      - ./mini_nonrf_config.yaml:/openair-ausf/etc/config.yaml
+    depends_on:
+      - oai-udm
+    networks:
+      public_net:
+        ipv4_address: 192.168.71.138
+    healthcheck:
+      test: /bin/bash -c "pgrep oai_ausf"
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
   oai-amf:
     container_name: rfsim5g-oai-amf
     image: oaisoftwarealliance/oai-amf:v2.0.0
@@ -29,7 +83,7 @@ services:
     volumes:
       - ./mini_nonrf_config.yaml:/openair-amf/etc/config.yaml
     depends_on:
-      - mysql
+      - oai-ausf
     networks:
       public_net:
         ipv4_address: 192.168.71.132
@@ -97,7 +151,7 @@ services:
     cap_drop:
       - ALL
     environment:
-      USE_ADDITIONAL_OPTIONS: --sa -E --rfsim --log_config.global_log_options level,nocolor,time
+      USE_ADDITIONAL_OPTIONS: -E --rfsim --serveraddr server --log_config.global_log_options level,nocolor,time
       ASAN_OPTIONS: detect_leaks=0
     depends_on:
       - oai-ext-dn
@@ -121,7 +175,7 @@ services:
       - NET_ADMIN
       - NET_RAW
     environment:
-      USE_ADDITIONAL_OPTIONS: -E --sa --rfsim -r 106 --numerology 1
+      USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001100 -C 3319680000
         --rfsimulator.serveraddr 192.168.71.140
         --log_config.global_log_options level,nocolor,time
@@ -150,7 +204,7 @@ services:
       - NET_ADMIN
       - NET_RAW
     environment:
-      USE_ADDITIONAL_OPTIONS: -E --sa --rfsim -r 106 --numerology 1
+      USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001101 -C 3319680000
         --rfsimulator.serveraddr 192.168.71.140
         --log_config.global_log_options level,nocolor,time
@@ -179,7 +233,7 @@ services:
       - NET_ADMIN
       - NET_RAW
     environment:
-      USE_ADDITIONAL_OPTIONS: -E --sa --rfsim -r 106 --numerology 1
+      USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001102 -C 3319680000
         --rfsimulator.serveraddr 192.168.71.140
         --log_config.global_log_options level,nocolor,time
@@ -208,7 +262,7 @@ services:
       - NET_ADMIN
       - NET_RAW
     environment:
-      USE_ADDITIONAL_OPTIONS: -E --sa --rfsim -r 106 --numerology 1
+      USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001103 -C 3319680000
         --rfsimulator.serveraddr 192.168.71.140
         --log_config.global_log_options level,nocolor,time

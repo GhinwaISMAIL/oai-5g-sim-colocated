@@ -25,6 +25,25 @@ nfs:
     n4:
       interface_name: eth0
       port: 8805
+  udr:
+    host: oai-udr
+    sbi:
+      port: 80
+      api_version: v1
+      interface_name: eth0
+  udm:
+    host: oai-udm
+    sbi:
+      port: 80
+      api_version: v1
+      interface_name: eth0
+  ausf:
+    host: oai-ausf
+    sbi:
+      port: 80
+      api_version: v1
+      interface_name: eth0
+
   upf:
     host: oai-upf
     sbi:
@@ -59,7 +78,7 @@ snssais:
 amf:
   amf_name: "OAI-AMF"
   support_features_options:
-    enable_simple_scenario: no
+    enable_simple_scenario: yes
     enable_nssf: no
     enable_smf_selection: no
   relative_capacity: 30
