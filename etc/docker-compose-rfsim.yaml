@@ -113,6 +113,13 @@ services:
       - TZ=Europe/Paris
     volumes:
       - ./mini_nonrf_config.yaml:/openair-upf/etc/config.yaml
+    entrypoint:
+      - /bin/bash
+      - -c
+      - >
+        N6=$$(ip -4 addr show | awk '/192\.168\.72\./{print $$NF}' | head -1);
+        ip route replace default via 192.168.72.135 dev $$N6;
+        exec /openair-upf/bin/entrypoint.sh
     depends_on:
       - oai-smf
     cap_add:
