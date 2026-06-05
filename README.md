@@ -248,6 +248,101 @@ sudo docker compose -f docker-compose-rfsim.yaml restart oai-nr-ue<N>
 
 ---
 
+## MGEN Traffic Testing
+
+MGEN (Multi-Generator) is installed on the host and copied into all 19 containers automatically at startup (via `docker cp` in setup.sh). It is available in: all 12 UE containers, all CN containers (AMF, SMF, UPF, UDR, UDM, AUSF), and ext-dn.
+
+### MGEN syntax basics
+
+```
+mgen event "<time> <command> [options]" [event "<time> <command>"] ...
+```
+
+- Time is in seconds from start (float, e.g. `0.0`, `5.0`)
+- `ON <flowId> <proto> DST <addr>/<port> PERIODIC [<pps> <size>]` — start a flow
+- `OFF <flowId>` — stop a flow (mgen exits when all flows are off)
+- `LISTEN <proto> <port>` — open a receive socket
+- `IGNORE <proto> <port>` — stop listening
+
+### Uplink test: UE → ext-dn through the full 5G path
+
+```bash
+# Step 1: add a route in the UE container so traffic exits via the 5G tunnel
+sudo docker exec rfsim5g-oai-nr-ue1 ip route add 192.168.72.0/24 dev oaitun_ue1
+
+# Step 2: start tcpdump on ext-dn to capture arriving packets (run in background)
+sudo docker exec rfsim5g-oai-ext-dn timeout 15 tcpdump -i eth0 -n "udp port 5001" &
+sleep 1
+
+# Step 3: start mgen receiver on ext-dn (background)
+sudo docker exec -d rfsim5g-oai-ext-dn mgen event "0.0 LISTEN UDP 5001"
+
+# Step 4: send 5 seconds of UDP traffic from UE1 (1 pkt/s, 1024 bytes)
+sudo docker exec rfsim5g-oai-nr-ue1 \
+  mgen event "0.0 ON 1 UDP DST 192.168.72.135/5001 PERIODIC [1.0 1024]" \
+       event "5.0 OFF 1"
+
+wait
+```
+
+Expected tcpdump output — source IP `12.1.1.x` confirms traffic came through the tunnel:
+
+```text
+12:09:41.051 IP 12.1.1.4.38438 > 192.168.72.135.5001: UDP, length 1024
+12:09:42.051 IP 12.1.1.4.38438 > 192.168.72.135.5001: UDP, length 1024
+...
+```
+
+### Downlink test: ext-dn → UE
+
+```bash
+# Get UE1's PDU session IP
+UE1_IP=$(sudo docker exec rfsim5g-oai-nr-ue1 ip addr show oaitun_ue1 | awk '/inet /{print $2}' | cut -d/ -f1)
+echo "UE1 tunnel IP: $UE1_IP"
+
+# Start receiver on UE1
+sudo docker exec -d rfsim5g-oai-nr-ue1 mgen event "0.0 LISTEN UDP 5001"
+
+# Send from ext-dn to UE1 (ext-dn already has route for 12.1.1.0/24 via UPF)
+sudo docker exec rfsim5g-oai-ext-dn \
+  mgen event "0.0 ON 1 UDP DST ${UE1_IP}/5001 PERIODIC [1.0 1024]" \
+       event "5.0 OFF 1"
+```
+
+### Bidirectional test: all 12 UEs simultaneously
+
+```bash
+# Add 5G route in all UE containers
+for i in $(seq 1 12); do
+  sudo docker exec rfsim5g-oai-nr-ue$i ip route add 192.168.72.0/24 dev oaitun_ue1 2>/dev/null
+done
+
+# Start receiver on ext-dn
+sudo docker exec -d rfsim5g-oai-ext-dn mgen event "0.0 LISTEN UDP 5001"
+
+# All 12 UEs send uplink traffic simultaneously (10 seconds)
+for i in $(seq 1 12); do
+  sudo docker exec -d rfsim5g-oai-nr-ue$i \
+    mgen event "0.0 ON 1 UDP DST 192.168.72.135/5001 PERIODIC [1.0 512]" \
+         event "10.0 OFF 1"
+done
+
+# Watch traffic arriving at ext-dn
+sudo docker exec rfsim5g-oai-ext-dn timeout 12 tcpdump -i eth0 -n "udp port 5001" -q 2>/dev/null \
+  | awk '{print $3}' | sort | uniq -c | sort -rn
+```
+
+The last command shows packet counts per source IP — you should see 12 different `12.1.1.x` addresses.
+
+### Notes
+
+- **The `ip route add` is not persistent** — it must be re-run after each container restart. Add it to a startup script if needed.
+- **mgen is not persistent** — `docker cp` is re-run by setup.sh on each node boot, but a manual `docker compose restart` of a single container will lose mgen in that container. Re-copy with: `sudo docker cp /usr/bin/mgen <container>:/usr/bin/mgen`
+- **Flow IDs** must be unique per mgen instance but can overlap across containers.
+- **Rate/size**: `PERIODIC [1.0 1024]` = 1 packet/sec, 1024 bytes. Increase rate (e.g. `[10.0 1024]`) to stress the data path.
+
+---
+
 ## UE IMSI / IP Reference
 
 | Container | IMSI | Container IP | PDU session IP |
