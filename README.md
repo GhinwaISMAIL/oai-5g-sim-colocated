@@ -250,7 +250,7 @@ sudo docker compose -f docker-compose-rfsim.yaml restart oai-nr-ue<N>
 
 ## MGEN Traffic Testing
 
-MGEN (Multi-Generator) is installed on the host and copied into all 19 containers automatically at startup (via `docker cp` in setup.sh). It is available in: all 12 UE containers, all CN containers (AMF, SMF, UPF, UDR, UDM, AUSF), and ext-dn.
+MGEN (Multi-Generator) is installed on the host and copied into the data-plane containers automatically at startup (via `docker cp` in setup.sh). It is available in: all 12 UE containers, UPF, and ext-dn. The control-plane NFs (AMF, SMF, UDR, UDM, AUSF) do not forward user data and do not need it.
 
 ### MGEN syntax basics
 

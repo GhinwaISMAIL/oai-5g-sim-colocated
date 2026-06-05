@@ -182,10 +182,10 @@ fi
 # (apt-get is not usable inside the OAI containers — missing caps
 #  and mgen is not in their repos; docker cp bypasses both issues)
 # ------------------------------------------------------------------ #
-echo "[SETUP] Copying MGEN binary into all containers..."
-ALL_CONTAINERS="rfsim5g-oai-amf rfsim5g-oai-smf rfsim5g-oai-upf \
-    rfsim5g-oai-udr rfsim5g-oai-udm rfsim5g-oai-ausf rfsim5g-oai-ext-dn"
-for container in $ALL_CONTAINERS; do
+echo "[SETUP] Copying MGEN binary into data-plane containers..."
+# Control-plane NFs (AMF/SMF/UDR/UDM/AUSF) don't forward user data
+# so mgen is only needed in UPF, ext-dn, and the 12 UE containers
+for container in rfsim5g-oai-upf rfsim5g-oai-ext-dn; do
     docker cp /usr/bin/mgen "$container":/usr/bin/mgen \
         && echo "[SETUP] MGEN ready in $container" \
         || echo "[SETUP] WARNING: MGEN copy failed in $container"
