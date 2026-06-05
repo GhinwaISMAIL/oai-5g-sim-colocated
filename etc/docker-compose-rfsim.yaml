@@ -142,6 +142,7 @@ services:
     container_name: rfsim5g-oai-ext-dn
     image: oaisoftwarealliance/trf-gen-cn5g:focal
     entrypoint: /bin/bash -c \
+          "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mgen >/dev/null 2>&1;"\
           "iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE;"\
           "ip route add 12.1.1.0/24 via 192.168.72.134 dev eth0; sleep infinity"
     depends_on:
@@ -185,6 +186,7 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    command: /bin/bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mgen >/dev/null 2>&1; exec /opt/oai-nr-ue/bin/entrypoint.sh"
     environment:
       USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001100 -C 3319680000
@@ -214,6 +216,7 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    command: /bin/bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mgen >/dev/null 2>&1; exec /opt/oai-nr-ue/bin/entrypoint.sh"
     environment:
       USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001101 -C 3319680000
@@ -243,6 +246,7 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    command: /bin/bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mgen >/dev/null 2>&1; exec /opt/oai-nr-ue/bin/entrypoint.sh"
     environment:
       USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001102 -C 3319680000
@@ -272,6 +276,7 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    command: /bin/bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mgen >/dev/null 2>&1; exec /opt/oai-nr-ue/bin/entrypoint.sh"
     environment:
       USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001103 -C 3319680000
@@ -301,6 +306,7 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    command: /bin/bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mgen >/dev/null 2>&1; exec /opt/oai-nr-ue/bin/entrypoint.sh"
     environment:
       USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001104 -C 3319680000
@@ -330,6 +336,7 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    command: /bin/bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mgen >/dev/null 2>&1; exec /opt/oai-nr-ue/bin/entrypoint.sh"
     environment:
       USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001105 -C 3319680000
@@ -359,6 +366,7 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    command: /bin/bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mgen >/dev/null 2>&1; exec /opt/oai-nr-ue/bin/entrypoint.sh"
     environment:
       USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001106 -C 3319680000
@@ -388,6 +396,7 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    command: /bin/bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mgen >/dev/null 2>&1; exec /opt/oai-nr-ue/bin/entrypoint.sh"
     environment:
       USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001107 -C 3319680000
@@ -417,6 +426,7 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    command: /bin/bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mgen >/dev/null 2>&1; exec /opt/oai-nr-ue/bin/entrypoint.sh"
     environment:
       USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001108 -C 3319680000
@@ -446,6 +456,7 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    command: /bin/bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mgen >/dev/null 2>&1; exec /opt/oai-nr-ue/bin/entrypoint.sh"
     environment:
       USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001109 -C 3319680000
@@ -475,6 +486,7 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    command: /bin/bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mgen >/dev/null 2>&1; exec /opt/oai-nr-ue/bin/entrypoint.sh"
     environment:
       USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001110 -C 3319680000
@@ -504,6 +516,7 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    command: /bin/bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mgen >/dev/null 2>&1; exec /opt/oai-nr-ue/bin/entrypoint.sh"
     environment:
       USE_ADDITIONAL_OPTIONS: -E --rfsim -r 106 --numerology 1
         --uicc0.imsi 208990100001111 -C 3319680000

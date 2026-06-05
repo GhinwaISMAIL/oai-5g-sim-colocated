@@ -46,14 +46,21 @@ echo "[SETUP] Docker installed."
 docker --version
 
 # ------------------------------------------------------------------ #
-# 2. Enable IP forwarding
+# 2. Install MGEN on host
+# ------------------------------------------------------------------ #
+echo "[SETUP] Installing MGEN on host..."
+apt-get install -y mgen
+echo "[SETUP] MGEN installed: $(mgen version 2>&1 | head -1)"
+
+# ------------------------------------------------------------------ #
+# 3. Enable IP forwarding
 # ------------------------------------------------------------------ #
 echo "[SETUP] Enabling IP forwarding..."
 sysctl -w net.ipv4.ip_forward=1
 echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
 
 # ------------------------------------------------------------------ #
-# 3. Pull all images
+# 4. Pull all images
 # ------------------------------------------------------------------ #
 echo "[SETUP] Pulling images..."
 
@@ -169,6 +176,20 @@ else
         fi
     done
 fi
+
+# ------------------------------------------------------------------ #
+# Install MGEN in core CN containers
+# (UE containers and ext-dn install it via their own entrypoints)
+# ------------------------------------------------------------------ #
+echo "[SETUP] Installing MGEN in core CN containers..."
+CN_CONTAINERS="rfsim5g-oai-amf rfsim5g-oai-smf rfsim5g-oai-upf rfsim5g-oai-udr rfsim5g-oai-udm rfsim5g-oai-ausf"
+for container in $CN_CONTAINERS; do
+    echo "[SETUP] Installing MGEN in $container..."
+    docker exec "$container" bash -c \
+        "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mgen >/dev/null 2>&1" \
+        && echo "[SETUP] MGEN ready in $container" \
+        || echo "[SETUP] WARNING: MGEN install failed in $container"
+done
 
 # ------------------------------------------------------------------ #
 # Done
