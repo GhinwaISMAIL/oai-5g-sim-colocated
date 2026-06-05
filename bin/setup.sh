@@ -178,17 +178,22 @@ else
 fi
 
 # ------------------------------------------------------------------ #
-# Install MGEN in core CN containers
-# (UE containers and ext-dn install it via their own entrypoints)
+# Install MGEN in all containers via docker cp from host
+# (apt-get is not usable inside the OAI containers — missing caps
+#  and mgen is not in their repos; docker cp bypasses both issues)
 # ------------------------------------------------------------------ #
-echo "[SETUP] Installing MGEN in core CN containers..."
-CN_CONTAINERS="rfsim5g-oai-amf rfsim5g-oai-smf rfsim5g-oai-upf rfsim5g-oai-udr rfsim5g-oai-udm rfsim5g-oai-ausf"
-for container in $CN_CONTAINERS; do
-    echo "[SETUP] Installing MGEN in $container..."
-    docker exec "$container" bash -c \
-        "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends mgen >/dev/null 2>&1" \
+echo "[SETUP] Copying MGEN binary into all containers..."
+ALL_CONTAINERS="rfsim5g-oai-amf rfsim5g-oai-smf rfsim5g-oai-upf \
+    rfsim5g-oai-udr rfsim5g-oai-udm rfsim5g-oai-ausf rfsim5g-oai-ext-dn"
+for container in $ALL_CONTAINERS; do
+    docker cp /usr/bin/mgen "$container":/usr/bin/mgen \
         && echo "[SETUP] MGEN ready in $container" \
-        || echo "[SETUP] WARNING: MGEN install failed in $container"
+        || echo "[SETUP] WARNING: MGEN copy failed in $container"
+done
+for i in $(seq 1 12); do
+    docker cp /usr/bin/mgen "rfsim5g-oai-nr-ue${i}":/usr/bin/mgen \
+        && echo "[SETUP] MGEN ready in rfsim5g-oai-nr-ue${i}" \
+        || echo "[SETUP] WARNING: MGEN copy failed in rfsim5g-oai-nr-ue${i}"
 done
 
 # ------------------------------------------------------------------ #
