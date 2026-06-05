@@ -49,17 +49,17 @@ nfs:
     sbi:
       port: 80
       api_version: v1
-      interface_name: eth0
+      interface_name: N4_IFACE
     n3:
-      interface_name: eth0
+      interface_name: N4_IFACE
       port: 2152
     n4:
-      interface_name: eth0
+      interface_name: N4_IFACE
       port: 8805
     n6:
-      interface_name: eth1
+      interface_name: N6_IFACE
     n9:
-      interface_name: eth1
+      interface_name: N6_IFACE
       port: 2152
 
 database:

@@ -117,9 +117,12 @@ services:
       - /bin/bash
       - -c
       - >
+        N4=$$(ip -4 addr show | awk '/192\.168\.71\./{print $$NF}' | head -1);
         N6=$$(ip -4 addr show | awk '/192\.168\.72\./{print $$NF}' | head -1);
+        cp /openair-upf/etc/config.yaml /tmp/upf_config.yaml;
+        sed -i "s/N4_IFACE/$$N4/g; s/N6_IFACE/$$N6/g" /tmp/upf_config.yaml;
         ip route replace default via 192.168.72.135 dev $$N6;
-        exec /openair-upf/bin/oai_upf -c /openair-upf/etc/config.yaml -o
+        exec /openair-upf/bin/oai_upf -c /tmp/upf_config.yaml -o
     depends_on:
       - oai-smf
     cap_add:
