@@ -119,7 +119,7 @@ services:
       - >
         N6=$$(ip -4 addr show | awk '/192\.168\.72\./{print $$NF}' | head -1);
         ip route replace default via 192.168.72.135 dev $$N6;
-        exec /openair-upf/bin/entrypoint.sh
+        exec /openair-upf/bin/oai_upf -c /openair-upf/etc/config.yaml -o
     depends_on:
       - oai-smf
     cap_add:
