@@ -146,7 +146,7 @@ upf:
   support_features:
     enable_bpf_datapath: no
     enable_snat: yes
-  remote_n6_gw: 127.0.0.1
+  remote_n6_gw: 192.168.72.135
   upf_info:
     sNssaiUpfInfoList:
       - sNssai: *embb_slice1
