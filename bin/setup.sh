@@ -177,24 +177,8 @@ else
     done
 fi
 
-# ------------------------------------------------------------------ #
-# Install MGEN in all containers via docker cp from host
-# (apt-get is not usable inside the OAI containers — missing caps
-#  and mgen is not in their repos; docker cp bypasses both issues)
-# ------------------------------------------------------------------ #
-echo "[SETUP] Copying MGEN binary into data-plane containers..."
-# Control-plane NFs (AMF/SMF/UDR/UDM/AUSF) don't forward user data
-# so mgen is only needed in UPF, ext-dn, and the 12 UE containers
-for container in rfsim5g-oai-upf rfsim5g-oai-ext-dn; do
-    docker cp /usr/bin/mgen "$container":/usr/bin/mgen \
-        && echo "[SETUP] MGEN ready in $container" \
-        || echo "[SETUP] WARNING: MGEN copy failed in $container"
-done
-for i in $(seq 1 12); do
-    docker cp /usr/bin/mgen "rfsim5g-oai-nr-ue${i}":/usr/bin/mgen \
-        && echo "[SETUP] MGEN ready in rfsim5g-oai-nr-ue${i}" \
-        || echo "[SETUP] WARNING: MGEN copy failed in rfsim5g-oai-nr-ue${i}"
-done
+# MGEN is bind-mounted into data-plane containers (UPF, ext-dn, UEs 1-12)
+# via docker-compose-rfsim.yaml volumes entries. No copy step needed.
 
 # ------------------------------------------------------------------ #
 # Done

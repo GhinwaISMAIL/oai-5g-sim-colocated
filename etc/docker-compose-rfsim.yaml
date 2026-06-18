@@ -113,6 +113,7 @@ services:
       - TZ=Europe/Paris
     volumes:
       - ./mini_nonrf_config.yaml:/openair-upf/etc/config.yaml
+      - /usr/bin/mgen:/usr/bin/mgen:ro
     entrypoint:
       - /bin/bash
       - -c
@@ -149,6 +150,8 @@ services:
     networks:
       traffic_net:
         ipv4_address: 192.168.72.135
+    volumes:
+      - /usr/bin/mgen:/usr/bin/mgen:ro
     healthcheck:
       test: /bin/bash -c "ping -c 2 192.168.72.134"
       interval: 10s
@@ -200,6 +203,7 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - ./nr-ue.conf:/opt/oai-nr-ue/etc/nr-ue.conf
+      - /usr/bin/mgen:/usr/bin/mgen:ro
     healthcheck:
       test: /bin/bash -c "pgrep nr-uesoftmodem"
       interval: 10s
@@ -229,6 +233,7 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - ./nr-ue.conf:/opt/oai-nr-ue/etc/nr-ue.conf
+      - /usr/bin/mgen:/usr/bin/mgen:ro
     healthcheck:
       test: /bin/bash -c "pgrep nr-uesoftmodem"
       interval: 10s
@@ -258,6 +263,7 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - ./nr-ue.conf:/opt/oai-nr-ue/etc/nr-ue.conf
+      - /usr/bin/mgen:/usr/bin/mgen:ro
     healthcheck:
       test: /bin/bash -c "pgrep nr-uesoftmodem"
       interval: 10s
@@ -287,6 +293,7 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - ./nr-ue.conf:/opt/oai-nr-ue/etc/nr-ue.conf
+      - /usr/bin/mgen:/usr/bin/mgen:ro
     healthcheck:
       test: /bin/bash -c "pgrep nr-uesoftmodem"
       interval: 10s
@@ -316,6 +323,7 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - ./nr-ue.conf:/opt/oai-nr-ue/etc/nr-ue.conf
+      - /usr/bin/mgen:/usr/bin/mgen:ro
     healthcheck:
       test: /bin/bash -c "pgrep nr-uesoftmodem"
       interval: 10s
@@ -345,6 +353,7 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - ./nr-ue.conf:/opt/oai-nr-ue/etc/nr-ue.conf
+      - /usr/bin/mgen:/usr/bin/mgen:ro
     healthcheck:
       test: /bin/bash -c "pgrep nr-uesoftmodem"
       interval: 10s
@@ -374,6 +383,7 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - ./nr-ue.conf:/opt/oai-nr-ue/etc/nr-ue.conf
+      - /usr/bin/mgen:/usr/bin/mgen:ro
     healthcheck:
       test: /bin/bash -c "pgrep nr-uesoftmodem"
       interval: 10s
@@ -403,6 +413,7 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - ./nr-ue.conf:/opt/oai-nr-ue/etc/nr-ue.conf
+      - /usr/bin/mgen:/usr/bin/mgen:ro
     healthcheck:
       test: /bin/bash -c "pgrep nr-uesoftmodem"
       interval: 10s
@@ -432,6 +443,7 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - ./nr-ue.conf:/opt/oai-nr-ue/etc/nr-ue.conf
+      - /usr/bin/mgen:/usr/bin/mgen:ro
     healthcheck:
       test: /bin/bash -c "pgrep nr-uesoftmodem"
       interval: 10s
@@ -461,6 +473,7 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - ./nr-ue.conf:/opt/oai-nr-ue/etc/nr-ue.conf
+      - /usr/bin/mgen:/usr/bin/mgen:ro
     healthcheck:
       test: /bin/bash -c "pgrep nr-uesoftmodem"
       interval: 10s
@@ -490,6 +503,7 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - ./nr-ue.conf:/opt/oai-nr-ue/etc/nr-ue.conf
+      - /usr/bin/mgen:/usr/bin/mgen:ro
     healthcheck:
       test: /bin/bash -c "pgrep nr-uesoftmodem"
       interval: 10s
@@ -519,6 +533,7 @@ services:
       - /dev/net/tun:/dev/net/tun
     volumes:
       - ./nr-ue.conf:/opt/oai-nr-ue/etc/nr-ue.conf
+      - /usr/bin/mgen:/usr/bin/mgen:ro
     healthcheck:
       test: /bin/bash -c "pgrep nr-uesoftmodem"
       interval: 10s
