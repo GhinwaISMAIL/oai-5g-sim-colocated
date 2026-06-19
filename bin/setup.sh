@@ -176,8 +176,22 @@ else
     done
 fi
 
-# MGEN is bind-mounted into data-plane containers (UPF, ext-dn, UEs 1-12)
-# via docker-compose-rfsim.yaml volumes entries. No copy step needed.
+# ------------------------------------------------------------------ #
+# 9. Route the DN subnet through each UE's PDU-session tunnel.
+#    Without this, the kernel sends app traffic out eth0 (control net),
+#    bypassing the 5G stack. Lost if a UE container is recreated; the
+#    MGEN deploy script should re-assert it before each run.
+# ------------------------------------------------------------------ #
+echo "[SETUP] Adding DN route (192.168.72.128/26) via oaitun_ue1 on all UEs..."
+for i in $(seq 1 12); do
+    if docker exec rfsim5g-oai-nr-ue${i} ip link show oaitun_ue1 >/dev/null 2>&1; then
+        docker exec rfsim5g-oai-nr-ue${i} ip route replace 192.168.72.128/26 dev oaitun_ue1 \
+            && echo "[SETUP] UE${i}: DN route added" \
+            || echo "[SETUP] WARNING: UE${i}: failed to add DN route"
+    else
+        echo "[SETUP] WARNING: UE${i}: oaitun_ue1 not present (not attached?)"
+    fi
+done
 
 # ------------------------------------------------------------------ #
 # Done
