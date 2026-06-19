@@ -184,12 +184,20 @@ fi
 # ------------------------------------------------------------------ #
 echo "[SETUP] Adding DN route (192.168.72.128/26) via oaitun_ue1 on all UEs..."
 for i in $(seq 1 12); do
+    TUNNEL_WAIT=0
+    TUNNEL_MAX=60
+    until docker exec rfsim5g-oai-nr-ue${i} ip link show oaitun_ue1 >/dev/null 2>&1; do
+        if [ "$TUNNEL_WAIT" -ge "$TUNNEL_MAX" ]; then
+            echo "[SETUP] WARNING: UE${i}: oaitun_ue1 not present after ${TUNNEL_MAX}s — skipping"
+            break
+        fi
+        sleep 5
+        TUNNEL_WAIT=$((TUNNEL_WAIT + 5))
+    done
     if docker exec rfsim5g-oai-nr-ue${i} ip link show oaitun_ue1 >/dev/null 2>&1; then
         docker exec rfsim5g-oai-nr-ue${i} ip route replace 192.168.72.128/26 dev oaitun_ue1 \
             && echo "[SETUP] UE${i}: DN route added" \
             || echo "[SETUP] WARNING: UE${i}: failed to add DN route"
-    else
-        echo "[SETUP] WARNING: UE${i}: oaitun_ue1 not present (not attached?)"
     fi
 done
 

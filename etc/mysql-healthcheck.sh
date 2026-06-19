@@ -1,39 +1,20 @@
 #!/bin/bash
 set -eo pipefail
 
-if [ "$MYSQL_ROOT_PASSWORD" ] && [ -z "$MYSQL_USER" ] && [ -z "$MYSQL_PASSWORD" ]; then
-	echo >&2 'Healthcheck error: cannot determine root password'
-	exit 0
-fi
-
-host="$(hostname --ip-address || echo '127.0.0.1')"
 user="${MYSQL_USER:-root}"
 export MYSQL_PWD="${MYSQL_PASSWORD:-$MYSQL_ROOT_PASSWORD}"
 
-args=(
-	-h"$host"
-	-u"$user"
-	--silent
-)
-
-STATUS=0
-if command -v mysqladmin &> /dev/null; then
-	if mysqladmin "${args[@]}" ping > /dev/null; then
-		database_check=$(mysql -u$user -D oai_db --silent -e "SELECT * FROM users;")
-		if [[ -z $database_check ]]; then
-			echo "Healthcheck error: oai_db not populated"
-			STATUS=1
-		fi
-		STATUS=0
-	else
-		echo "Healthcheck error: Mysql port inactive"
-		STATUS=1
-	fi
-else
-	if select="$(echo 'SELECT 1' | mysql "${args[@]}")" && [ "$select" = '1' ]; then
-		STATUS=0
-	else
-		STATUS=1
-	fi
+# Use the Unix socket (no -h) — avoids hostname resolution issues on Ubuntu 22
+# and works regardless of MySQL's bind-address setting.
+if ! mysqladmin -u"$user" ping --silent > /dev/null 2>&1; then
+    echo "Healthcheck error: MySQL not responding"
+    exit 1
 fi
-exit $STATUS
+
+database_check=$(mysql -u"$user" --silent -e "SELECT COUNT(*) FROM oai_db.AuthenticationSubscription;" 2>/dev/null)
+if [ -z "$database_check" ] || [ "$database_check" -eq 0 ]; then
+    echo "Healthcheck error: oai_db.AuthenticationSubscription is empty or unreachable"
+    exit 1
+fi
+
+exit 0
