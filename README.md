@@ -250,7 +250,26 @@ sudo docker compose -f docker-compose-rfsim.yaml restart oai-nr-ue<N>
 
 ## MGEN Traffic Testing
 
-MGEN (Multi-Generator) is installed on the host and copied into the data-plane containers automatically at startup (via `docker cp` in setup.sh). It is available in: all 12 UE containers, UPF, and ext-dn. The control-plane NFs (AMF, SMF, UDR, UDM, AUSF) do not forward user data and do not need it.
+MGEN (Multi-Generator) is shipped in the repo as `bin/mgen` (focal-built, x86-64) and bind-mounted read-only into the data-plane containers at compose startup. It is available in: all 12 UE containers, UPF, and ext-dn. The binary is durable — it survives container recreation and is independent of the host OS image.
+
+### Preflight check (run before every session)
+
+```bash
+# Fast: verify registration, mgen executable, and DN routing on all 12 UEs
+sudo bash /local/repository/bin/mgen-preflight.sh quick
+
+# Full: same + bidirectional traffic with tunnel path-integrity verification
+sudo bash /local/repository/bin/mgen-preflight.sh
+
+# Single UE debug
+sudo bash /local/repository/bin/mgen-preflight.sh 3
+```
+
+Exit code 0 = all pass. Use as a gate before launching experiments:
+
+```bash
+sudo bash /local/repository/bin/mgen-preflight.sh quick || exit 1
+```
 
 ### MGEN syntax basics
 
@@ -268,7 +287,7 @@ mgen event "<time> <command> [options]" [event "<time> <command>"] ...
 
 ```bash
 # Step 1: add a route in the UE container so traffic exits via the 5G tunnel
-sudo docker exec rfsim5g-oai-nr-ue1 ip route add 192.168.72.0/24 dev oaitun_ue1
+sudo docker exec rfsim5g-oai-nr-ue1 ip route replace 192.168.72.128/26 dev oaitun_ue1
 
 # Step 2: start tcpdump on ext-dn to capture arriving packets (run in background)
 sudo docker exec rfsim5g-oai-ext-dn timeout 15 tcpdump -i eth0 -n "udp port 5001" &
@@ -314,7 +333,7 @@ sudo docker exec rfsim5g-oai-ext-dn \
 ```bash
 # Add 5G route in all UE containers
 for i in $(seq 1 12); do
-  sudo docker exec rfsim5g-oai-nr-ue$i ip route add 192.168.72.0/24 dev oaitun_ue1 2>/dev/null
+  sudo docker exec rfsim5g-oai-nr-ue$i ip route replace 192.168.72.128/26 dev oaitun_ue1
 done
 
 # Start receiver on ext-dn
@@ -336,8 +355,8 @@ The last command shows packet counts per source IP — you should see 12 differe
 
 ### Notes
 
-- **The `ip route add` is not persistent** — it must be re-run after each container restart. Add it to a startup script if needed.
-- **mgen is not persistent** — `docker cp` is re-run by setup.sh on each node boot, but a manual `docker compose restart` of a single container will lose mgen in that container. Re-copy with: `sudo docker cp /usr/bin/mgen <container>:/usr/bin/mgen`
+- **mgen is durable** — shipped as `bin/mgen` in the repo and bind-mounted into containers. It survives container recreation and does not depend on the host OS image.
+- **The DN route (`192.168.72.128/26 via oaitun_ue1`) is set automatically** by `setup.sh` on fresh boot. If a UE container is restarted mid-experiment, re-apply it with: `sudo docker exec rfsim5g-oai-nr-ue<N> ip route replace 192.168.72.128/26 dev oaitun_ue1`. The preflight script detects and reports this.
 - **Flow IDs** must be unique per mgen instance but can overlap across containers.
 - **Rate/size**: `PERIODIC [1.0 1024]` = 1 packet/sec, 1024 bytes. Increase rate (e.g. `[10.0 1024]`) to stress the data path.
 
