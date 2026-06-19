@@ -46,21 +46,14 @@ echo "[SETUP] Docker installed."
 docker --version
 
 # ------------------------------------------------------------------ #
-# 2. Install MGEN on host
-# ------------------------------------------------------------------ #
-echo "[SETUP] Installing MGEN on host..."
-apt-get install -y mgen
-echo "[SETUP] MGEN installed: $(mgen version 2>&1 | head -1)"
-
-# ------------------------------------------------------------------ #
-# 3. Enable IP forwarding
+# 2. Enable IP forwarding
 # ------------------------------------------------------------------ #
 echo "[SETUP] Enabling IP forwarding..."
 sysctl -w net.ipv4.ip_forward=1
 echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
 
 # ------------------------------------------------------------------ #
-# 4. Pull all images
+# 3. Pull all images
 # ------------------------------------------------------------------ #
 echo "[SETUP] Pulling images..."
 
@@ -81,6 +74,12 @@ echo "[SETUP] All images pulled."
 # 4. Start everything
 # ------------------------------------------------------------------ #
 echo "[SETUP] Starting containers..."
+
+MGEN_BIN="/local/repository/bin/mgen"
+if [ ! -f "$MGEN_BIN" ] || [ ! -x "$MGEN_BIN" ]; then
+    echo "[SETUP] ERROR: $MGEN_BIN is missing or not executable. Aborting."
+    exit 1
+fi
 
 cd /local/repository/etc
 docker compose -f docker-compose-rfsim.yaml up -d

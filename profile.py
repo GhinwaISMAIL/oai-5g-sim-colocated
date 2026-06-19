@@ -13,7 +13,7 @@ pc.verifyParameters()
 
 request = pc.makeRequestRSpec()
 
-IMAGE = "urn:publicid:IDN+emulab.net+image+emulab-ops:UBUNTU20-64-STD"
+IMAGE = "urn:publicid:IDN+emulab.net+image+emulab-ops:UBUNTU22-64-STD"
 
 # Single node runs everything: CN + gNB + UEs all in Docker Compose
 node = request.RawPC("cn")
